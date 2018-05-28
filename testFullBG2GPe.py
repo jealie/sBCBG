@@ -3,7 +3,7 @@
 import nstrand
 import os
 import numpy as np
-from LGneurons import *
+from LGneurons2GPe import *
 from modelParams import *
 import nest.raster_plot
 import nest.voltage_trace
@@ -11,44 +11,22 @@ import pylab as pl
 import sys
 import matplotlib.pyplot as plt
 import math
-import csv
 
 #------------------------------------------
 # Creates the populations of neurons necessary to simulate a BG circuit
 #------------------------------------------
 def createBG():
-  #==========================
-  # Creation of neurons
-  #-------------------------
   print '\nCreating neurons\n================'
-
-  nbSim['MSN'] = params['nbMSN']
-  create('MSN')
-  nest.SetStatus(Pop['MSN'],{"I_e":params['IeMSN']})
-
-  nbSim['FSI'] = params['nbFSI']
-  create('FSI')
-  nest.SetStatus(Pop['FSI'],{"I_e":params['IeFSI']})
-
-  nbSim['STN'] = params['nbSTN']
-  create('STN')
-  nest.SetStatus(Pop['STN'],{"I_e":params['IeSTN']})
-
-  nbSim['GPe'] = params['nbGPe']
-  create('GPe')
-  nest.SetStatus(Pop['GPe'],{"I_e":params['IeGPe']})
-
-  nbSim['GPi'] = params['nbGPi']
-  create('GPi')
-  nest.SetStatus(Pop['GPi'],{"I_e":params['IeGPi']})
-
+  for N in NUCLEI:
+      nbSim[N] = params['nb'+N]
+      create(N)
+      nest.SetStatus(Pop[N],{"I_e":params['Ie'+N]})
+  
   parrot = True # switch to False at your risks & perils...
   nbSim['CSN'] = params['nbCSN']
   create('CSN', fake=True, parrot=parrot)
-
   nbSim['PTN'] = params['nbPTN']
   create('PTN', fake=True, parrot=parrot)
-
   nbSim['CMPf'] = params['nbCMPf']
   create('CMPf', fake=True, parrot=params['parrotCMPf']) # was: False
 
@@ -58,101 +36,122 @@ def createBG():
 # Connects the populations of a previously created multi-channel BG circuit
 #------------------------------------------
 def connectBG(antagInjectionSite,antag):
-  G = {'MSN': params['GMSN'],
-       'FSI': params['GFSI'],
-       'STN': params['GSTN'],
-       'GPe': params['GGPe'],
-       'GPi': params['GGPi'],
-      }
 
-  print "Gains on LG14 syn. strength:", G
-
-  #-------------------------
-  # connection of populations
-  #-------------------------
   print '\nConnecting neurons\n================'
   print "**",antag,"antagonist injection in",antagInjectionSite,"**"
+  
   print '* MSN Inputs'
-  connect('ex','CSN','MSN', inDegree= params['inDegCSNMSN'], gain=G['MSN'])
-  connect('ex','PTN','MSN', inDegree= params['inDegPTNMSN'], gain=G['MSN'])
-  connect('ex','CMPf','MSN', inDegree=params['inDegCMPfMSN'],gain=G['MSN'])
-  connect('in','MSN','MSN', inDegree= params['inDegMSNMSN'], gain=G['MSN'])
-  connect('in','FSI','MSN', inDegree= params['inDegFSIMSN'], gain=G['MSN'])
+  connect('ex','CSN','MSN', inDegree= params['inDegCSNMSN'], gain=params['gainCSNMSN']) #
+  connect('ex','PTN','MSN', inDegree= params['inDegPTNMSN'], gain=params['gainPTNMSN']) #
+  connect('ex','CMPf','MSN', inDegree=params['inDegCMPfMSN'],gain=params['gainCMPfMSN']) #
+  connect('in','MSN','MSN', inDegree= params['inDegMSNMSN'], gain=params['gainMSNMSN']) #
+  connect('in','FSI','MSN', inDegree= params['inDegFSIMSN'], gain=params['gainFSIMSN']) #
   # some parameterizations from LG14 have no STN->MSN or GPe->MSN synaptic contacts
   if alpha['STN->MSN'] != 0:
     print "alpha['STN->MSN']",alpha['STN->MSN']
-    connect('ex','STN','MSN', inDegree= params['inDegSTNMSN'],gain=G['MSN'])
-  if alpha['GPe->MSN'] != 0:
-    print "alpha['GPe->MSN']",alpha['GPe->MSN']
-    connect('in','GPe','MSN', inDegree= params['inDegGPeMSN'],gain=G['MSN'])
+    connect('ex','STN','MSN', inDegree= params['inDegSTNMSN'], gain=params['gainSTNMSN']) #
+  if alpha['GTA->MSN'] != 0:
+    print "alpha['GTA->MSN']",alpha['GTA->MSN']
+    connect('in','GTA','MSN', inDegree= params['inDegGTAMSN'], gain=params['gainGTAMSN']) #
 
   print '* FSI Inputs'
-  connect('ex','CSN','FSI',  inDegree= params['inDegCSNFSI'], gain=G['FSI'])
-  connect('ex','PTN','FSI',  inDegree= params['inDegPTNFSI'], gain=G['FSI'])
+  connect('ex','CSN','FSI',  inDegree= params['inDegCSNFSI'], gain=params['gainCSNFSI']) #
+  connect('ex','PTN','FSI',  inDegree= params['inDegPTNFSI'], gain=params['gainPTNFSI']) #
   if alpha['STN->FSI'] != 0:
-    connect('ex','STN','FSI',inDegree= params['inDegSTNFSI'], gain=G['FSI'])
-  connect('in','GPe','FSI',  inDegree= params['inDegGPeFSI'], gain=G['FSI'])
-  connect('ex','CMPf','FSI', inDegree= params['inDegCMPfFSI'],gain=G['FSI'])
-  connect('in','FSI','FSI',  inDegree= params['inDegFSIFSI'], gain=G['FSI'])
+    connect('ex','STN','FSI',inDegree= params['inDegSTNFSI'], gain=params['gainSTNFSI']) #
+  connect('in','GTA','FSI',  inDegree= params['inDegGTAFSI'], gain=params['gainGTAFSI']) #
+  connect('ex','CMPf','FSI', inDegree= params['inDegCMPfFSI'],gain=params['gainCMPfFSI']) #
+  connect('in','FSI','FSI',  inDegree= params['inDegFSIFSI'], gain=params['gainFSIFSI']) #
 
   print '* STN Inputs'
-  connect('ex','PTN','STN', inDegree= params['inDegPTNSTN'], gain=G['STN'])
-  connect('ex','CMPf','STN',inDegree= params['inDegCMPfSTN'],gain=G['STN'])
-  connect('in','GPe','STN', inDegree= params['inDegGPeSTN'], gain=G['STN']) 
+  connect('ex','PTN','STN', inDegree= params['inDegPTNSTN'], gain=params['gainPTNSTN']) #
+  connect('ex','CMPf','STN',inDegree= params['inDegCMPfSTN'],gain=params['gainCMPfSTN']) #
+  connect('in','GTI','STN', inDegree= params['inDegGTISTN'], gain=params['gainGTISTN']) #
 
-  print '* GPe Inputs'
-  if antagInjectionSite == 'GPe':
+  print '* GTA Inputs'
+  if antagInjectionSite == 'GTA':
     if   antag == 'AMPA':
-      connect('NMDA','CMPf','GPe',inDegree=params['inDegCMPfGPe'],gain=G['GPe'])
-      connect('NMDA','STN','GPe', inDegree=params['inDegSTNGPe'], gain=G['GPe'])
-      connect('in','MSN','GPe', inDegree=  params['inDegMSNGPe'], gain=G['GPe'])
-      connect('in','GPe','GPe', inDegree=  params['inDegGPeGPe'], gain=G['GPe']) 
+      connect('NMDA','CMPf','GTA',inDegree=params['inDegCMPfGTA'],gain=params['gainCMPfGTA']) #
+      connect('NMDA','STN','GTA', inDegree=params['inDegSTNGTA'], gain=params['gainSTNGTA']) #
+      connect('in','MSN','GTA', inDegree=  params['inDegMSNGTA'], gain=params['gainMSNGTA']) #
+      connect('in','GTA','GTA', inDegree=  params['inDegGTAGTA'], gain=params['gainGTAGTA']) #
+      connect('in','GTI','GTA', inDegree=  params['inDegGTIGTA'], gain=params['gainGTIGTA']) #
     elif antag == 'NMDA':
-      connect('AMPA','CMPf','GPe',inDegree= params['inDegCMPfGPe'],gain=G['GPe'])
-      connect('AMPA','STN','GPe', inDegree= params['inDegSTNGPe'], gain=G['GPe'])
-      connect('in','MSN','GPe', inDegree= params['inDegMSNGPe'],   gain=G['GPe'])
-      connect('in','GPe','GPe', inDegree= params['inDegGPeGPe'],   gain=G['GPe'])
+      connect('AMPA','CMPf','GTA',inDegree= params['inDegCMPfGTA'],gain=params['gainCMPfGTA']) #
+      connect('AMPA','STN','GTA', inDegree= params['inDegSTNGTA'], gain=params['gainSTNGTA']) #
+      connect('in','MSN','GTA', inDegree= params['inDegMSNGTA'],   gain=params['gainMSNGTA']) #
+      connect('in','GTI','GTA', inDegree= params['inDegGTIGTA'],   gain=params['gainGTIGTA']) #
+      connect('in','GTA','GTA', inDegree= params['inDegGTAGTA'],   gain=params['gainGTAGTA']) #
     elif antag == 'AMPA+GABAA':
-      connect('NMDA','CMPf','GPe',inDegree= params['inDegCMPfGPe'],gain=G['GPe'])
-      connect('NMDA','STN','GPe',inDegree= params['inDegSTNGPe'],  gain=G['GPe'])
+      connect('NMDA','CMPf','GTA',inDegree= params['inDegCMPfGTA'],gain=params['gainCMPfGTA']) #
+      connect('NMDA','STN','GTA',inDegree= params['inDegSTNGTA'],  gain=params['gainSTNGTA']) #
     elif antag == 'GABAA':
-      connect('ex','CMPf','GPe',inDegree= params['inDegCMPfGPe'], gain=G['GPe'])
-      connect('ex','STN','GPe', inDegree= params['inDegSTNGPe'],  gain=G['GPe'])
+      connect('ex','CMPf','GTA',inDegree= params['inDegCMPfGTA'], gain=params['gainCMPfGTA']) #
+      connect('ex','STN','GTA', inDegree= params['inDegSTNGTA'],  gain=params['gainSTNGTA']) #
     else:
       print antagInjectionSite,": unknown antagonist experiment:",antag
   else:
-    connect('ex','CMPf','GPe',inDegree= params['inDegCMPfGPe'],gain=G['GPe'])
-    connect('ex','STN','GPe', inDegree= params['inDegSTNGPe'], gain=G['GPe'])
-    connect('in','MSN','GPe', inDegree= params['inDegMSNGPe'], gain=G['GPe'])
-    connect('in','GPe','GPe', inDegree= params['inDegGPeGPe'], gain=G['GPe'])
+    connect('ex','CMPf','GTA',inDegree= params['inDegCMPfGTA'],gain=params['gainCMPfGTA']) #
+    connect('ex','STN','GTA', inDegree= params['inDegSTNGTA'], gain=params['gainSTNGTA']) #
+    connect('in','MSN','GTA', inDegree= params['inDegMSNGTA'], gain=params['gainMSNGTA']) #
+    connect('in','GTA','GTA', inDegree= params['inDegGTAGTA'], gain=params['gainGTAGTA']) #
+    connect('in','GTI','GTA', inDegree= params['inDegGTIGTA'], gain=params['gainGTIGTA']) #
+
+  print '* GTI Inputs'
+  if antagInjectionSite == 'GTI':
+    if   antag == 'AMPA':
+      connect('NMDA','CMPf','GTI',inDegree=params['inDegCMPfGTI'],gain=params['gainCMPfGTI']) #
+      connect('NMDA','STN','GTI', inDegree=params['inDegSTNGTI'], gain=params['gainSTNGTI']) #
+      connect('in','MSN','GTI', inDegree=  params['inDegMSNGTI'], gain=params['gainMSNGTI']) #
+      connect('in','GTI','GTI', inDegree=  params['inDegGTIGTI'], gain=params['gainGTIGTI']) #
+      connect('in','GTA','GTI', inDegree=  params['inDegGTAGTI'], gain=params['gainGTAGTI']) #
+    elif antag == 'NMDA':
+      connect('AMPA','CMPf','GTI',inDegree= params['inDegCMPfGTI'],gain=params['gainCMPfGTI']) #
+      connect('AMPA','STN','GTI', inDegree= params['inDegSTNGTI'], gain=params['gainSTNGTI']) #
+      connect('in','MSN','GTI', inDegree= params['inDegMSNGTI'],   gain=params['gainMSNGTI']) #
+      connect('in','GTI','GTI', inDegree= params['inDegGTIGTI'],   gain=params['gainGTIGTI']) #
+      connect('in','GTA','GTI', inDegree= params['inDegGTAGTI'],   gain=params['gainGTAGTI']) #
+    elif antag == 'AMPA+GABAA':
+      connect('NMDA','CMPf','GTI',inDegree= params['inDegCMPfGTI'],gain=params['gainCMPfGTI']) #
+      connect('NMDA','STN','GTI',inDegree= params['inDegSTNGTI'],  gain=params['gainSTNGTI']) #
+    elif antag == 'GABAA':
+      connect('ex','CMPf','GTI',inDegree= params['inDegCMPfGTI'], gain=params['gainCMPfGTI']) #
+      connect('ex','STN','GTI', inDegree= params['inDegSTNGTI'],  gain=params['gainSTNGTI']) #
+    else:
+      print antagInjectionSite,": unknown antagonist experiment:",antag
+  else:
+    connect('ex','CMPf','GTI',inDegree= params['inDegCMPfGTI'],gain=params['gainCMPfGTI']) #
+    connect('ex','STN','GTI', inDegree= params['inDegSTNGTI'], gain=params['gainSTNGTI']) #
+    connect('in','MSN','GTI', inDegree= params['inDegMSNGTI'], gain=params['gainMSNGTI']) #
+    connect('in','GTI','GTI', inDegree= params['inDegGTIGTI'], gain=params['gainGTIGTI']) #
+    connect('in','GTA','GTI', inDegree= params['inDegGTAGTI'], gain=params['gainGTAGTI']) #
 
   print '* GPi Inputs'
   if antagInjectionSite =='GPi':
     if   antag == 'AMPA+NMDA+GABAA':
       pass
     elif antag == 'NMDA':
-      connect('in','MSN','GPi',   inDegree= params['inDegMSNGPi'], gain=G['GPi'])
-      connect('AMPA','STN','GPi', inDegree= params['inDegSTNGPi'], gain=G['GPi'])
-      connect('in','GPe','GPi',   inDegree= params['inDegGPeGPi'], gain=G['GPi'])
-      connect('AMPA','CMPf','GPi',inDegree= params['inDegCMPfGPi'],gain=G['GPi'])
+      connect('in','MSN','GPi',   inDegree= params['inDegMSNGPi'], gain=params['gainMSNGPi']) #
+      connect('AMPA','STN','GPi', inDegree= params['inDegSTNGPi'], gain=params['gainSTNGPi']) #
+      connect('in','GTI','GPi',   inDegree= params['inDegGTIGPi'], gain=params['gainGTIGPi']) #
+      connect('AMPA','CMPf','GPi',inDegree= params['inDegCMPfGPi'],gain=params['gainCMPfGPi']) #
     elif antag == 'NMDA+AMPA':
-      connect('in','MSN','GPi', inDegree= params['inDegMSNGPi'], gain=G['GPi'])
-      connect('in','GPe','GPi', inDegree= params['inDegGPeGPi'], gain=G['GPi'])
+      connect('in','MSN','GPi', inDegree= params['inDegMSNGPi'], gain=params['gainMSNGPi']) #
+      connect('in','GTI','GPi', inDegree= params['inDegGTIGPi'], gain=params['gainGTIGPi']) #
     elif antag == 'AMPA':
-      connect('in','MSN','GPi',   inDegree= params['inDegMSNGPi'], gain=G['GPi'])
-      connect('NMDA','STN','GPi', inDegree= params['inDegSTNGPi'], gain=G['GPi'])
-      connect('in','GPe','GPi',   inDegree= params['inDegGPeGPi'], gain=G['GPi'])
-      connect('NMDA','CMPf','GPi',inDegree= params['inDegCMPfGPi'],gain=G['GPi'])
+      connect('in','MSN','GPi',   inDegree= params['inDegMSNGPi'], gain=params['gainMSNGPi']) #
+      connect('NMDA','STN','GPi', inDegree= params['inDegSTNGPi'], gain=params['gainSTNGPi']) #
+      connect('NMDA','CMPf','GPi',inDegree= params['inDegCMPfGPi'],gain=params['gainCMPfGPi']) #
     elif antag == 'GABAA':
-      connect('ex','STN','GPi', inDegree= params['inDegSTNGPi'], gain=G['GPi'])
-      connect('ex','CMPf','GPi',inDegree= params['inDegCMPfGPi'],gain=G['GPi'])
+      connect('ex','STN','GPi', inDegree= params['inDegSTNGPi'], gain=params['gainSTNGPi']) #
+      connect('ex','CMPf','GPi',inDegree= params['inDegCMPfGPi'],gain=params['gainCMPfGPi']) #
     else:
       print antagInjectionSite,": unknown antagonist experiment:",antag
   else:
-    connect('in','MSN','GPi', inDegree= params['inDegMSNGPi'], gain=G['GPi'])
-    connect('ex','STN','GPi', inDegree= params['inDegSTNGPi'], gain=G['GPi'])
-    connect('in','GPe','GPi', inDegree= params['inDegGPeGPi'], gain=G['GPi'])
-    connect('ex','CMPf','GPi',inDegree= params['inDegCMPfGPi'],gain=G['GPi'])
+    connect('in','MSN','GPi', inDegree= params['inDegMSNGPi'], gain=params['gainMSNGPi']) #
+    connect('ex','STN','GPi', inDegree= params['inDegSTNGPi'], gain=params['gainSTNGPi']) #
+    connect('ex','CMPf','GPi',inDegree= params['inDegCMPfGPi'],gain=params['gainCMPfGPi']) #
+    connect('in','GTI','GPi',inDegree= params['inDegGTIGPi'],  gain=params['gainGTIGPi']) #
 
 #------------------------------------------
 # Re-weight a specific connection, characterized by a source, a target, and a receptor
@@ -181,7 +180,7 @@ def alter_connection(src, tgt, tgt_receptor, altered_weight):
 # gets the nuclei involved in deactivation experiments in GPe/GPi
 #------------------------------------------
 def get_afferents(a):
-  GABA_afferents = ['MSN', 'GPe'] # afferents with gabaergic connections
+  GABA_afferents = ['MSN', 'GTA','GTI'] # afferents with gabaergic connections
   GLUT_afferents = ['STN', 'CMPf'] # afferents with glutamatergic connections
   if a == 'GABAA':
     afferents = GABA_afferents
@@ -231,12 +230,26 @@ def instantiate_BG(params={}, antagInjectionSite='none', antag=''):
   initNeurons()
 
   print '/!\ Using the following LG14 parameterization',params['LG14modelID']
-  loadLG14params(params['LG14modelID'])
+  loadDictParams(params['LG14modelID'])
   loadThetaFromCustomparams(params)
 
   # We check that all the necessary parameters have been defined. They should be in the modelParams.py file.
   # If one of them misses, we exit the program.
-  necessaryParams=['nbCh','nbMSN','nbFSI','nbSTN','nbGPe','nbGPi','nbCSN','nbPTN','nbCMPf','IeMSN','IeFSI','IeSTN','IeGPe','IeGPi','GMSN','GFSI','GSTN','GGPe','GGPi','inDegCSNMSN','inDegPTNMSN','inDegCMPfMSN','inDegMSNMSN','inDegFSIMSN','inDegSTNMSN','inDegGPeMSN','inDegCSNFSI','inDegPTNFSI','inDegSTNFSI','inDegGPeFSI','inDegCMPfFSI','inDegFSIFSI','inDegPTNSTN','inDegCMPfSTN','inDegGPeSTN','inDegCMPfGPe','inDegSTNGPe','inDegMSNGPe','inDegGPeGPe','inDegMSNGPi','inDegSTNGPi','inDegGPeGPi','inDegCMPfGPi',]
+  necessaryParams=['nbCh','nbMSN','nbFSI','nbSTN','nbGTI','nbGTA','nbGPi','nbCSN','nbPTN','nbCMPf',
+                   'IeMSN','IeFSI','IeSTN','IeGTI','IeGTA','IeGPi',
+                   'gainCSNMSN','gainCSNFSI','gainPTNMSN','gainPTNFSI','gainPTNSTN',
+                   'gainCMPfMSN','gainCMPfFSI','gainCMPfSTN','gainCMPfGTA','gainCMPfGTI','gainCMPfGPi',
+                   'gainMSNMSN','gainMSNGTA','gainMSNGTI','gainMSNGPi','gainFSIMSN','gainFSIFSI',
+                   'gainSTNMSN','gainSTNFSI','gainSTNGTA','gainSTNGTI','gainSTNGPi',
+                   'gainGTAMSN','gainGTAFSI','gainGTAGTA','gainGTAGTI',
+                   'gainGTISTN','gainGTIGTA','gainGTIGTI','gainGTIGPi',
+                   'inDegCSNMSN','inDegPTNMSN','inDegCMPfMSN','inDegMSNMSN','inDegFSIMSN','inDegSTNMSN','inDegGTAMSN',
+                   'inDegCSNFSI','inDegPTNFSI','inDegSTNFSI','inDegGTAFSI','inDegCMPfFSI','inDegFSIFSI',
+                   'inDegPTNSTN','inDegCMPfSTN','inDegGTISTN',
+                   'inDegCMPfGTA','inDegSTNGTA','inDegMSNGTA','inDegGTAGTA','inDegGTIGTA',
+                   'inDegCMPfGTI','inDegSTNGTI','inDegMSNGTI','inDegGTIGTI','inDegGTAGTI',
+                   'inDegMSNGPi','inDegSTNGPi','inDegGTIGPi','inDegCMPfGPi',]
+  
   for np in necessaryParams:
     if np not in params:
       raise KeyError('Missing parameter: '+np)
@@ -244,11 +257,8 @@ def instantiate_BG(params={}, antagInjectionSite='none', antag=''):
   #------------------------
   # creation and connection of the neural populations
   #------------------------
-
   createBG()
-
   connectBG(antagInjectionSite,antag)
-
 
 #------------------------------------------
 # Checks whether the BG model respects the electrophysiological constaints (firing rate at rest).
@@ -273,7 +283,6 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
   simulationOffset = nest.GetKernelStatus('time')
   print('Simulation Offset: '+str(simulationOffset))
   offsetDuration = 1000.
-  simDuration = 5000. # ms
 
   #-------------------------
   # measures
@@ -292,17 +301,17 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
       
   for N in NUCLEI:   
     # 1000ms offset period for network stabilization
-    spkDetect[N] = nest.Create("spike_detector", params={"withgid": True, "withtime": True, "label": antagStr+N,"to_memory": False, "to_file": storeGDF, 'start':offsetDuration+simulationOffset,'stop':offsetDuration+simDuration+simulationOffset})
+    spkDetect[N] = nest.Create("spike_detector", params={"withgid": True, "withtime": True, "label": antagStr+N,"to_memory": False, "to_file": storeGDF, 'start':offsetDuration+simulationOffset,'stop':offsetDuration+params['tSimu']+simulationOffset})
     nest.Connect(Pop[N], spkDetect[N])
     if showPotential:
       # multimeter records only the last 200ms in one neuron in each population
-      multimeters[N] = nest.Create('multimeter', params = {"withgid": True, 'withtime': True, 'interval': 0.1, 'record_from': ['V_m'], "label": antagStr+N, "to_file": False, 'start':offsetDuration+simulationOffset+simDuration-200.,'stop':offsetDuration+simDuration+simulationOffset})
+      multimeters[N] = nest.Create('multimeter', params = {"withgid": True, 'withtime': True, 'interval': 0.1, 'record_from': ['V_m'], "label": antagStr+N, "to_file": False, 'start':offsetDuration+simulationOffset+params['tSimu']-200.,'stop':offsetDuration+params['tSimu']+simulationOffset})
       nest.Connect(multimeters[N], [Pop[N][0]])
 
   #-------------------------
   # Simulation
   #-------------------------
-  nest.Simulate(simDuration+offsetDuration)
+  nest.Simulate(params['tSimu']+offsetDuration)
 
   score = 0
 
@@ -316,7 +325,7 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
     frstr += "none , "
     for N in NUCLEI:
       strTestPassed = 'NO!'
-      expeRate[N] = nest.GetStatus(spkDetect[N], 'n_events')[0] / float(nbSim[N]*simDuration) * 1000
+      expeRate[N] = nest.GetStatus(spkDetect[N], 'n_events')[0] / float(nbSim[N]*params['tSimu']) * 1000
       if expeRate[N] <= FRRNormal[N][1] and expeRate[N] >= FRRNormal[N][0]:
         # if the measured rate is within acceptable values
         strTestPassed = 'OK'
@@ -339,7 +348,7 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
     validationStr = ""
     frstr += str(antag) + " , "
     for N in NUCLEI:
-      expeRate[N] = nest.GetStatus(spkDetect[N], 'n_events')[0] / float(nbSim[N]*simDuration) * 1000
+      expeRate[N] = nest.GetStatus(spkDetect[N], 'n_events')[0] / float(nbSim[N]*params['tSimu']) * 1000
       if N == antagInjectionSite:
         strTestPassed = 'NO!'
         if expeRate[N] <= FRRAnt[N][antag][1] and expeRate[N] >= FRRAnt[N][antag][0]:
@@ -402,14 +411,14 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
         nsub += 1
     pl.show()
 
-  return score, 5 if antagInjectionSite == 'none' else 1
+  return score, 6 if antagInjectionSite == 'none' else 1
 
 # -----------------------------------------------------------------------------
-# This function verify if their is pauses in the GPe and if the caracteristiques
-# of theses pauses are relevant with the data of the elias paper 2007 
-# It is run after CheckAVGFR because it uses the gdf files of the simulation.
+# This function recuperates the spikes occured in each neuron of each population
+# and order them
 # -----------------------------------------------------------------------------
 
+ 
 #---------------------------- begining getSpikes ------------------------------
 # return an ordered dictionnary of the spikes occurences by neuron and in the time
 def getSpikes(Directory, Nuclei):
@@ -460,7 +469,7 @@ def rasterPlot(spikesDict, Nuclei, Directory):
 
     for neuron in spikesDict:
         rasterList.append(spikesDict[neuron])  
-    plt.figure(figsize=(40,15))
+    plt.figure(figsize=(30,8))
     plt.eventplot(rasterList, linelengths = 0.8, linewidths = 0.6)
     plt.title('Spike raster plot ' + Nuclei)
     plt.grid()
@@ -474,7 +483,7 @@ def activityHistPlot(spikesList, Nuclei, Directory):
     if not os.path.exists(Directory + '/activityHistPlot'):
         os.makedirs(Directory + '/activityHistPlot')
 
-    plt.figure(figsize=(40,5))
+    plt.figure(figsize=(30,8))
     plt.hist(spikesList, bins=200, normed=0.5)
     plt.title('Histogram of the activity' + Nuclei)
     plt.grid()
@@ -629,50 +638,24 @@ def gdfExploitation(Directory):
 #---------------------------- end gdf exploitation ----------------------------
 
 
+
+#------------------------------------------------------------------------------
 def main():
     
   Directory = os.getcwd()
+  
   if len(sys.argv) >= 2:
     print "Command Line Parameters"
     paramKeys = ['LG14modelID',
-                 'nbMSN',
-                 'nbFSI',
-                 'nbSTN',
-                 'nbGPe',
-                 'nbGPi',
-                 'nbCSN',
-                 'nbPTN',
-                 'nbCMPf',
-                 'GMSN',
-                 'GFSI',
-                 'GSTN',
-                 'GGPe',
-                 'GGPi', 
-                 'IeGPe',
-                 'IeGPi',
-                 'inDegCSNMSN',
-                 'inDegPTNMSN',
-                 'inDegCMPfMSN',
-                 'inDegFSIMSN',
-                 'inDegMSNMSN', 
-                 'inDegCSNFSI',
-                 'inDegPTNFSI',
-                 'inDegSTNFSI',
-                 'inDegGPeFSI',
-                 'inDegCMPfFSI',
-                 'inDegFSIFSI',
-                 'inDegPTNSTN',
-                 'inDegCMPfSTN',
-                 'inDegGPeSTN',
-                 'inDegCMPfGPe',
-                 'inDegSTNGPe',
-                 'inDegMSNGPe',
-                 'inDegGPeGPe',
-                 'inDegMSNGPi',
-                 'inDegSTNGPi',
-                 'inDegGPeGPi',
-                 'inDegCMPfGPi',
-                 ]
+                 'nbMSN','nbFSI','nbSTN','nbGTA','nbGTI','nbGPi','nbCSN','nbPTN','nbCMPf',
+                 'GMSN','GFSI','GSTN','GGTA','GGTI','GGPi', 
+                 'IeGTA','IeGTI','IeGPi',
+                 'inDegCSNMSN','inDegPTNMSN','inDegCMPfMSN','inDegFSIMSN','inDegMSNMSN','inDegGTAMSN',
+                 'inDegCSNFSI','inDegPTNFSI','inDegSTNFSI','inDegGTAFSI','inDegCMPfFSI','inDegFSIFSI',
+                 'inDegPTNSTN','inDegCMPfSTN','inDegGTISTN',
+                 'inDegCMPfGTA','inDegCMPfGTI','inDegSTNGTA','inDegSTNGTI','inDegMSNGTA','inDegMSNGTI','inDegGTAGTA','inDegGTIGTA','inDegGTIGTI',
+                 'inDegMSNGPi','inDegSTNGPi','inDegGTIGPi','inDegCMPfGPi',]
+    
     if len(sys.argv) == len(paramKeys)+1:
       print "Using command line parameters"
       print sys.argv
@@ -688,27 +671,30 @@ def main():
   instantiate_BG(params, antagInjectionSite='none', antag='')
   score = np.zeros((2))
   score += checkAvgFR(params=params,antagInjectionSite='none',antag='',showRasters=True)  
+  os.system('mkdir NoeArchGdf')  # save the .gdf files before antagonist desaster 
+  os.system('cp log/MSN* log/STN* log/GTI* log/GTA* log/GPi* log/FSI* NoeArchGdf/ ')
+  os.system('rm log/MSN* log/STN* log/GTI* log/GTA* log/GPi* log/FSI* ')
+  
+  gdfExploitation(Directory)
   
   print "******************"
   print " Score FRR:",score[0],'/',score[1]
   print "******************"
-  
-  os.system('mkdir NoeArchGdf')  # save the .gdf files before antagonist desaster 
-  os.system('cp log/MSN* log/STN* log/GPe* log/GPi* log/FSI* NoeArchGdf/ ')
-  os.system('rm log/MSN* log/STN* log/GPe* log/GPi* log/FSI* ')
-  
-  gdfExploitation(Directory)
-  
+ 
   # don't bother with deactivation or the pauses tests if activities at rest are not within plausible bounds
-#  if score[0] < score[1]:
-#    print("Activities at rest do not match: skipping deactivation tests")
-#    
+  if score[0] < score[1]:
+    print("Activities at rest do not match: skipping deactivation tests")
 #  else:
 ##     The following implements the deactivation tests without re-wiring the BG (faster)
 #    for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:
-#      ww = deactivate('GPe', a)
-#      score += checkAvgFR(params=params,antagInjectionSite='GPe',antag=a)
-#      reactivate('GPe', a, ww)
+#      ww = deactivate('GTA', a)
+#      score += checkAvgFR(params=params,antagInjectionSite='GTA',antag=a)
+#      reactivate('GTA', a, ww)
+#      
+#    for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:
+#      ww = deactivate('GTA', a)
+#      score += checkAvgFR(params=params,antagInjectionSite='GTA',antag=a)
+#      reactivate('GTA', a, ww)
 #
 #    for a in ['AMPA+NMDA+GABAA','AMPA','NMDA+AMPA','NMDA','GABAA']:
 #      ww = deactivate('GPi', a)
@@ -724,7 +710,9 @@ def main():
 #    for a in ['AMPA+NMDA+GABAA','AMPA','NMDA+AMPA','NMDA','GABAA']:    
 #      instantiate_BG(params, antagInjectionSite='GPi', antag=a)
 #      score += checkAvgFR(params=params,antagInjectionSite='GPi',antag=a)
-  
+
+
+ 
   #-------------------------
   print "******************"
   print " Total Score :",score[0],'/',score[1]

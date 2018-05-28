@@ -72,6 +72,8 @@ class JobDispatcher:
 
   def load_base_config(self, base='baseParams'):
     # Loads the base parameterization, initializing all parameters to sensible defaults
+    if self.cmd_args.GPe == 2:
+        base ='baseParams2GPe'
     params = importlib.import_module(base).params
     self.params.update(params)
 
@@ -125,6 +127,7 @@ class JobDispatcher:
     else:
       # SangoArray uses a different naming scheme with numbered subdirectories
       IDstring = 'array_'+self.timeString
+    
     if self.tag != '':
       IDstring += '_'+self.tag
     # The first 3 steps initialize the directory and populate it with the configurations files
@@ -141,7 +144,11 @@ class JobDispatcher:
       # LOCAL EXECUTION #
       ###################
       # just launch the script
-      command = 'python '+params['whichTest']+'.py'
+      if self.cmd_args.GPe == 2:
+          command = 'python '+params['whichTest']+'2GPe.py'
+      else:
+          command = 'python '+params['whichTest']+'.py'
+
     elif self.platform == 'Sango':
       ###########################
       # SANGO CLUSTER EXECUTION #
@@ -156,6 +163,7 @@ class JobDispatcher:
                       '#SBATCH --job-name=sBCBG_'+IDstring+'\n',
                       '#SBATCH --input=none\n',
                       '#SBATCH --output=none \n',
+                      '#SBATCH --error="'+IDstring+'.err" \n',
                       '#SBATCH --mail-user='+params['email']+'\n',
                       '#SBATCH --mail-type=BEGIN,END,FAIL \n',
                       ]
@@ -365,7 +373,10 @@ class JobDispatcher:
     # replace values to be set at runtime (for now, only used when "nbcpu=-1")
     self.expandValues()
     # initialize the file list to transfer
-    self.files_to_transfer = ['LGneurons.py', 'iniBG.py', self.params['whichTest']+'.py', 'nstrand.py', 'solutions_simple_unique.csv', '__init__.py']
+    if self.cmd_args.GPe == 2:
+        self.files_to_transfer = ['solutionDict2GPe.py','LGneurons2GPe.py', 'testFullBG2GPe.py', 'testChannelBG2GPe.py', 'nstrand.py', '__init__.py']
+    else:
+        self.files_to_transfer = ['solutions_simple_unique.csv','LGneurons.py', 'testFullBG.py', 'testChannelBG.py', 'nstrand.py', '__init__.py']
     # performs the recurrent exploration of parameterizations to run
     self.recParamExplo(self.params)
 
@@ -376,7 +387,7 @@ def main():
     parser = argparse.ArgumentParser(description="Simulation Dispatcher. Argument precedence: Hardcoded default values < Custom initialization file values < commandline-supplied values.", formatter_class=lambda prog: argparse.HelpFormatter(prog,max_help_position=27))
     parser._action_groups.pop()
     RequiredNamed = parser.add_argument_group('mandatory arguments')
-    RequiredNamed.add_argument('--platform', type=str, help='Run the experiment on which platform?', required=True, choices=['Local', 'Sango', 'SangoArray', 'K'])
+    RequiredNamed.add_argument('--platform', type=str, help='Run the experiment on which platform?', required=True, choices=['Local','Sango', 'SangoArray', 'K'])
     Optional = parser.add_argument_group('optional arguments')
     Optional.add_argument('--custom', type=str, help='Provide a custom file to initialize parameters - without the .py extension', default=None)
     Optional.add_argument('--LG14modelID', type=int, help='Which LG14 parameterization to use?', default=None)
@@ -390,12 +401,15 @@ def main():
     Optional.add_argument('--nestSeed', type=int, help='Nest seed (affects the Poisson spike train generator)', default=None)
     Optional.add_argument('--pythonSeed', type=int, help='Python seed (affects connection map)', default=None)
     Optional.add_argument('--mock', action="store_true", help='Does not start the simulation, only writes experiment-specific directories', default=False)
+    Optional.add_argument('--GPe',type=int, help='Which kind of GPe to simulate ? split = 2, not split = 1', default=None)
     
     cmd_args = parser.parse_args()
     
     dispatcher = JobDispatcher(cmd_args)
 
     dispatcher.dispatch()
+    
+#    dirdir = os.getcwd() # perfect to make a global result file
 
 if __name__ == '__main__':
     main()

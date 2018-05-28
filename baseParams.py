@@ -8,6 +8,9 @@
 params = {
 'nbCh':                          1, # number of concurrent channels to simulate
 'LG14modelID':                   9, # LG 2014 parameterization used (default: model #9)
+  
+'tSimu':                     5000.,
+  
 'nbMSN':                     2644., # population size (default: 1/1000 of the BG)
 'nbFSI':                       53., # ^
 'nbSTN':                        8., # ^
@@ -16,11 +19,13 @@ params = {
 'nbCSN':                     3000., # ^
 'nbPTN':                      100., # ^
 'nbCMPf':                       9., # ^
+  
 'GMSN':                         1., # gain on all synapses (default: no gain)
 'GFSI':                         1., # ^
 'GSTN':                         1., # ^
 'GGPe':                         1., # ^
 'GGPi':                         1., # ^
+  
 'IeMSN':                        0., # tonic input currents (default: no input current)
 'IeFSI':                        0., # ^
 'IeSTN':                        0., # ^
@@ -55,6 +60,7 @@ params = {
 'redundancySTNGPi':              3, # ^
 'redundancyGPeGPi':              3, # ^
 'redundancyCMPfGPi':             3, # ^
+  
 'cTypeCSNMSN':           'focused', # defining connection types for channel-based models (focused or diffuse) based on LG14 - refer to this paper for justification
 'cTypePTNMSN':           'focused', # ^
 'cTypeCMPfMSN':          'diffuse', # ^
@@ -79,6 +85,7 @@ params = {
 'cTypeMSNGPi':           'focused', # ^
 'cTypeSTNGPi':           'diffuse', # ^
 'cTypeGPeGPi':           'diffuse', # LG14: no data available to decide; setting to diffuse improve selection properties
+  
 'parrotCMPf' :                True, # Should the CMPf be simulated using parrot neurons?
 'stochastic_delays':          None, # If specified, gives the relative sd of a clipped Gaussian distribution for the delays
 # For convenience, a few simulator variables are also set here
@@ -89,4 +96,5 @@ params = {
 'durationH':                  '08', # max duration of a simulation, used by Sango cluster
 'nbnodes':                     '1', # number of nodes, used by K computer
 }
+
 
