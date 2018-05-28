@@ -8,39 +8,29 @@ if interactive :
   import pylab
 
 import nstrand
-
+from solutionDict2GPe import * # contain the solution of the population model ordered in a dictionary
+from modelParams import *
 import nest
 import numpy as np
 import numpy.random as rnd
 import csv
 from math import sqrt, cosh, exp, pi
 
-#-------------------------------------------------------------------------------
-# Loads a given LG14 model parameterization
-# ID must be in [0,14]
-#-------------------------------------------------------------------------------
-def loadLG14params(ID):
-  # Load the file with the Lienard solutions:
-  LG14SolutionsReader = csv.DictReader(open("solutions_simple_unique.csv"),delimiter=';')
-  LG14Solutions = []
-  for row in LG14SolutionsReader:
-    LG14Solutions.append(row)
-
-  print '### Parameterization #'+str(ID)+' from (Lienard & Girard, 2014) is used. ###'
-  #print LG14Solutions[ID]['ALPHA_GPe_MSN']
-
-  for k,v in alpha.iteritems():
-    #print k,v,round(float(LG14Solutions[ID]['ALPHA_'+k.replace('->','_')]),0)
-    alpha[k] = round(float(LG14Solutions[ID]['ALPHA_'+k.replace('->','_')]),0)
-
-  for k,v in p.iteritems():
-    #print 'dist:',k,v,round(float(LG14Solutions[ID]['DIST_'+k.replace('->','_')]),2)
-    p[k] = round(float(LG14Solutions[ID]['DIST_'+k.replace('->','_')]),2)
-
-  for k,v in BGparams.iteritems():
-    BGparams[k]['V_th'] = round(float(LG14Solutions[ID]['THETA_'+k]),1)
-
-
+# -----------------------------------------------------------------------------
+# Load a given LG14 model from the dictionary of solution (GTI - GTA are added)
+# ID must be contain in [0, 14]
+# -----------------------------------------------------------------------------
+def loadDictParams(ID):
+    print '### Parameterization #'+str(ID)+' from (Lienard & Girard, 2014) is used. ###'
+    for k,v in alpha.iteritems():
+        alpha[k] = round(float(LG14SolutionDict['ALPHA_'+k.replace('->','_')][ID]),0)
+        
+    for k,v in p.iteritems():
+      p[k] = round(float(LG14SolutionDict['DIST_'+k.replace('->','_')][ID]),2)
+   
+    for k,v in BGparams.iteritems():
+      BGparams[k]['V_th'] = round(float(LG14SolutionDict['THETA_'+k][ID]),1)
+      
 def loadThetaFromCustomparams(params):
   for k,v in BGparams.iteritems():
     try:
@@ -117,7 +107,10 @@ def createMC(name,nbCh,fake=False,parrot=True):
     else:
       for i in range(nbCh):
         Fake[name].append(nest.Create('poisson_generator',int(nbSim[name])))
-        nest.SetStatus(Fake[name][i],{'rate':rate[name]})
+        if i == 1:
+            nest.SetStatus(Fake[name][i],{'rate':rate[name]}) ## selection test: rate1[name]
+        else:
+            nest.SetStatus(Fake[name][i],{'rate':rate[name]})
         Pop[name].append(nest.Create('parrot_neuron',int(nbSim[name])))
         nest.Connect(pre=Fake[name][i],post=Pop[name][i],conn_spec={'rule':'one_to_one'})
 
@@ -368,11 +361,11 @@ def computeW(listRecType,nameSrc,nameTgt,inDegree,gain=1.,verbose=False):
 
   # attenuation due to the distance from the receptors to the soma of tgt:
   attenuation = cosh(LX[nameTgt]*(1-p[nameSrc+'->'+nameTgt])) / cosh(LX[nameTgt])
-
+      
   w={}
   for r in listRecType:
     w[r] = nu / float(inDegree) * attenuation * wPSP[recType[r]-1] * gain
-
+  print '\n',nameSrc,'->',nameTgt,' W = ', w[r]*float(inDegree)
   return w
 
 #-------------------------------------------------------------------------------
@@ -386,21 +379,22 @@ simDuration = 10000. # in ms
 FRRNormal = {'MSN': [0.1,1],
              'FSI': [5,20],
              'STN': [15.2,22.8],
-             'GPe': [55.7,74.5],
-             'GPi': [59.1,79.5],
-             }
+             'GTA': [55.7,74.5], # non corrected PAUSERS FRR (elias) mean+/- std
+             'GTI': [55.7,74.5],
+             'GPi': [59.1,79.5],}
+
 FRRGPi = {'AMPA+NMDA+GABAA':[53.4,96.8],
           'NMDA':[27.2451,78.6255],
           'NMDA+AMPA':[6.811275,52.364583],
           'AMPA':[5.7327,66.0645],
-          'GABAA':[44.1477,245.8935],
-          }
+          'GABAA':[44.1477,245.8935],}
+
 FRRGPe = {'AMPA':[4.2889,58.7805],
           'AMPA+GABAA':[10.0017148,137.076126],
           'NMDA':[29.5767,61.1645],
-          'GABAA':[74.8051,221.4885],
-          }
-FRRAnt = {'GPe':FRRGPe,'GPi':FRRGPi}
+          'GABAA':[74.8051,221.4885],}
+
+FRRAnt = {'GTA':FRRGPe, 'GTI':FRRGPe,'GPi':FRRGPi}
 
 # imported from Chadoeuf "connexweights"
 # All the parameters needed to replicate Lienard model
@@ -418,14 +412,15 @@ D_NMDA=100./exp(1)
 Ri=200.E-2   # Ohms.m
 Rm=20000.E-4 # Ohms.m^2
 
-NUCLEI=['MSN','FSI','STN','GPe','GPi']
+NUCLEI=['MSN','FSI','STN','GTA','GTI','GPi']
 
 # Number of neurons in the real macaque brain
 # one hemisphere only, based on Hardman et al. 2002 paper, except for striatum & CM/Pf
 neuronCounts={'MSN': 26448.0E3,
               'FSI':   532.0E3,
               'STN':    77.0E3,
-              'GPe':   251.0E3,
+              'GTA': 251.0E3,
+              'GTI': 251.0E3,
               'GPi':   143.0E3,
               'CMPf':   86.0E3
              }
@@ -434,7 +429,8 @@ neuronCounts={'MSN': 26448.0E3,
 nbSim = {'MSN': 0.,
          'FSI': 0.,
          'STN': 0.,
-         'GPe': 0.,
+         'GTA': 0.,
+         'GTI': 0.,
          'GPi': 0.,
          'CMPf':0.,
          'CSN': 0.,
@@ -442,20 +438,25 @@ nbSim = {'MSN': 0.,
         }
 
 # P(X->Y): probability that a given neuron from X projects to at least neuron of Y
-P = {'MSN->GPe': 1., 
+P = {'MSN->GTA': 1., 
+     'MSN->GTI': 1.,
      'MSN->GPi': 0.82,
      'MSN->MSN': 1.,
      'FSI->MSN': 1.,
      'FSI->FSI': 1.,
-     'STN->GPe': 0.83,
+     'STN->GTA': 0.83,
+     'STN->GTI': 0.83,
      'STN->GPi': 0.72,
      'STN->MSN': 0.17,
      'STN->FSI': 0.17,
-     'GPe->STN': 1.,
-     'GPe->GPe': 0.84,
-     'GPe->GPi': 0.84,
-     'GPe->MSN': 0.16,
-     'GPe->FSI': 0.16,
+     'GTI->STN': 1.,
+     'GTA->GTA': 0.84, 
+     'GTI->GTA': 0.84,
+     'GTI->GTI': 0.84,
+     'GTA->GTI': 0.84,
+     'GTI->GPi': 0.84,
+     'GTA->MSN': 0.16,
+     'GTA->FSI': 0.16,
      'CSN->MSN': 1.,
      'CSN->FSI': 1.,
      'PTN->MSN': 1.,
@@ -464,54 +465,66 @@ P = {'MSN->GPe': 1.,
      'CMPf->STN': 1.,
      'CMPf->MSN': 1.,
      'CMPf->FSI': 1.,
-     'CMPf->GPe': 1.,
+     'CMPf->GTA': 1.,
+     'CMPf->GTI': 1.,
      'CMPf->GPi': 1.
     }
 
 # alpha X->Y: average number of synaptic contacts made by one neuron of X to one neuron of Y, when there is a connexion
 # for the moment set from one specific parameterization, should be read from Jean's solution file 
-alpha = {'MSN->GPe':   171,
-         'MSN->GPi':   210,
-         'MSN->MSN':   210,
-         'FSI->MSN':  4362,
-         'FSI->FSI':   116,
-         'STN->GPe':   428,
-         'STN->GPi':   233,
+alpha = {'MSN->GTA':   171,
+         'MSN->GTI':   171,
+         'MSN->GPi':     210,
+         'MSN->MSN':     210,
+         'FSI->MSN':     4362,
+         'FSI->FSI':     116,
+         'STN->GTA':   428,
+         'STN->GTI':   428,
+         'STN->GPi':     233,
          'STN->MSN':     0,
-         'STN->FSI':    91,
-         'GPe->STN':    19,
-         'GPe->GPe':    38,
-         'GPe->GPi':    16,
-         'GPe->MSN':     0,
-         'GPe->FSI':   353,
-         'CSN->MSN':   342, # here, represents directly \nu
-         'CSN->FSI':   250, # here, represents directly \nu
+         'STN->FSI':     91,
+         'GTI->STN':   19,
+         'GTA->GTA': 38,
+         'GTI->GTA': 38,
+         'GTI->GTI': 38,
+         'GTA->GTI': 38,
+         'GTI->GPi':   16,
+         'GTA->MSN':   0,
+         'GTA->FSI':   353,
+         'CSN->MSN':     342, # here, represents directly \nu
+         'CSN->FSI':     250, # here, represents directly \nu
          'PTN->MSN':     5, # here, represents directly \nu
          'PTN->FSI':     5, # here, represents directly \nu 
-         'PTN->STN':   259, # here, represents directly \nu
-         'CMPf->MSN': 4965,
-         'CMPf->FSI': 1053,
-         'CMPf->STN':   76,
-         'CMPf->GPe':   79,
-         'CMPf->GPi':  131
+         'PTN->STN':     259, # here, represents directly \nu
+         'CMPf->MSN':    4965,
+         'CMPf->FSI':    1053,
+         'CMPf->STN':    76,
+         'CMPf->GTA':  79,
+         'CMPf->GTI':  79,
+         'CMPf->GPi':    131
         }
 
 # p(X->Y): relative distance on the dendrite from the soma, where neurons rom X projects to neurons of Y
 # Warning: p is not P!
-p = {'MSN->GPe':  0.48,
+p = {'MSN->GTA':  0.48,
+     'MSN->GTI':  0.48,
      'MSN->GPi':  0.59,
      'MSN->MSN':  0.77,
      'FSI->MSN':  0.19,
      'FSI->FSI':  0.16,
-     'STN->GPe':  0.30,
+     'STN->GTA':  0.30,
+     'STN->GTI':  0.30,
      'STN->GPi':  0.59,
      'STN->MSN':  0.16,
      'STN->FSI':  0.41,
-     'GPe->STN':  0.58,
-     'GPe->GPe':  0.01,
-     'GPe->GPi':  0.13,
-     'GPe->MSN':  0.06,
-     'GPe->FSI':  0.58,
+     'GTI->STN':  0.58,
+     'GTA->GTA':  0.01,
+     'GTI->GTA':  0.01,
+     'GTI->GTI':  0.01,
+     'GTA->GTI':  0.01,
+     'GTI->GPi':  0.13,
+     'GTA->MSN':  0.06,
+     'GTA->FSI':  0.58,
      'CSN->MSN':  0.95,
      'CSN->FSI':  0.82,
      'PTN->MSN':  0.98,
@@ -520,32 +533,38 @@ p = {'MSN->GPe':  0.48,
      'CMPf->STN': 0.46,
      'CMPf->MSN': 0.27,
      'CMPf->FSI': 0.06,
-     'CMPf->GPe': 0.0,
+     'CMPf->GTA': 0.0,
+     'CMPf->GTI': 0.0,
      'CMPf->GPi': 0.48
     }
 
 # electrotonic constant L computation:
-dx={'MSN':1.E-6,'FSI':1.5E-6,'STN':1.5E-6,'GPe':1.7E-6,'GPi':1.2E-6}
-lx={'MSN':619E-6,'FSI':961E-6,'STN':750E-6,'GPe':865E-6,'GPi':1132E-6}
+dx={'MSN':1.E-6,'FSI':1.5E-6,'STN':1.5E-6,'GTA':1.7E-6,'GTI':1.7E-6,'GPi':1.2E-6}
+lx={'MSN':619E-6,'FSI':961E-6,'STN':750E-6,'GTA':865E-6,'GTI':865E-6,'GPi':1132E-6}
 LX={}
 for n in NUCLEI:
     LX[n]=lx[n]*sqrt((4*Ri)/(dx[n]*Rm))
 
 # tau: communication delays
-tau = {'MSN->GPe':    7.,
+tau = {'MSN->GTA':    7.,
+       'MSN->GTI':    7.,
        'MSN->GPi':   11.,
        'MSN->MSN':    1.,
        'FSI->MSN':    1.,
        'FSI->FSI':    1.,
-       'STN->GPe':    3.,
+       'STN->GTA':    3.,
+       'STN->GTI':    3.,
        'STN->GPi':    3.,
        'STN->MSN':    3.,
        'STN->FSI':    3.,
-       'GPe->STN':   10.,
-       'GPe->GPe':    1.,
-       'GPe->GPi':    3.,
-       'GPe->MSN':    3.,
-       'GPe->FSI':    3.,
+       'GTI->STN':   10.,
+       'GTA->GTA':    1.,
+       'GTI->GTA':    1.,
+       'GTI->GTI':    1.,
+       'GTA->GTI':    1.,
+       'GTI->GPi':    3.,
+       'GTA->MSN':    3.,
+       'GTA->FSI':    3.,
        'CSN->MSN':    7.,
        'CSN->FSI':    7.,
        'PTN->MSN':    3.,
@@ -554,7 +573,8 @@ tau = {'MSN->GPe':    7.,
        'CMPf->MSN':   7.,
        'CMPf->FSI':   7.,
        'CMPf->STN':   7.,#4
-       'CMPf->GPe':   7.,#5
+       'CMPf->GTA':   7.,#5
+       'CMPf->GTI':   7.,#5
        'CMPf->GPi':   7.,#6
        }
 
@@ -596,7 +616,12 @@ STNparams = {'tau_m':         6.0, # as in HSG06 (but they model rats...)
              'C_m':           6.0  # so that R_m=1, C_m=tau_m
             }
 
-GPeparams = {'tau_m':        14.0, # 20 -> 14 based on Johnson & McIntyre 2008, JNphy)
+GTAparams = {'tau_m':        14.0, # 20 -> 14 based on Johnson & McIntyre 2008, JNphy)
+             'V_th':         11.0, # value of the LG14 example model, table 9
+             'C_m':          14.0  # so that R_m=1, C_m=tau_m
+            }
+
+GTIparams = {'tau_m':        14.0, # 20 -> 14 based on Johnson & McIntyre 2008, JNphy)
              'V_th':         11.0, # value of the LG14 example model, table 9
              'C_m':          14.0  # so that R_m=1, C_m=tau_m
             }
@@ -613,7 +638,8 @@ GPiparams = {'tau_m':        14.0, # 20 -> 14 based on Johnson & McIntyre 2008, 
 BGparams = {'MSN':MSNparams,
             'FSI':FSIparams,
             'STN':STNparams,
-            'GPe':GPeparams,
+            'GTA':GTAparams,
+            'GTI':GTIparams,
             'GPi':GPiparams}
 
 Pop = {}
@@ -627,7 +653,17 @@ rate = {'CSN':   2.  ,
         'MSN':   0.25, # MSN and the following will be used when the corresponding nucleus is not explicitely simulated
         'FSI':  16.6 ,
         'STN':  14.3 ,
-        'GPe':  62.6 ,
-        'GPi':  64.2
-        } 
+        'GTA':  62.6 ,
+        'GTI':  62.6 ,
+        'GPi':  64.2} 
+
+rate1 = {'CSN':   5.  ,
+        'PTN':  15.  ,
+        'CMPf':  4.  ,
+        'MSN':   0.25, # MSN and the following will be used when the corresponding nucleus is not explicitely simulated
+        'FSI':  16.6 ,
+        'STN':  14.3 ,
+        'GTA':  62.6 ,
+        'GTI':  62.6 ,
+        'GPi':  64.2} 
 
