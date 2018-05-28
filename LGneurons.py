@@ -134,21 +134,26 @@ def createMC(name,nbCh,fake=False,parrot=True):
 # LCGDelays: shall we use the delays obtained by (Liénard, Cos, Girard, in prep) or not (default = True)
 # gain : allows to amplify the weight normally deduced from LG14
 #-------------------------------------------------------------------------------
-def connect(type,nameSrc,nameTgt,inDegree,LCGDelays=True,gain=1., verbose=True):
+def connect(type,nameSrc,nameTgt,inDegree,LCGDelays=True,gain=1., verbose=True, projType=''):
 
   def printv(text):
     if verbose:
       print(text)
 
   if inDegree > 0. and inDegree < 1.:
+    printv('Using fractional inDegree (value supplied: '+str(inDegree)+')')
     # fractional inDegree is expressed as a fraction of max number of neurons
-    inDegree = get_frac(inDegree, nameSrc, nameTgt, verbose=verbose)
+    inDegree = get_frac(inDegree, nameSrc, nameTgt, verbose=False)
 
   # check if in degree acceptable (not larger than number of neurons in the source nucleus)
   if inDegree  > nbSim[nameSrc]:
     printv("/!\ WARNING: required 'in degree' ("+str(inDegree)+") larger than number of neurons in the source population ("+str(nbSim[nameSrc])+"), thus reduced to the latter value")
     inDegree = nbSim[nameSrc]
 
+  if inDegree == 0.:
+    printv("/!\ WARNING: non-existent connection strength, will skip")
+    return
+      
   printv("* connecting "+nameSrc+" -> "+nameTgt+" with "+type+" connection and "+str(inDegree)+ " inputs")
 
   # process receptor types
@@ -244,8 +249,10 @@ def connectMC(type,nameSrc,nameTgt,projType,inDegree,LCGDelays=True,gain=1., ver
   def printv(text):
     if verbose:
       print(text)
+      
   if inDegree > 0. and inDegree < 1.:
       # fractional inDegree is expressed as a fraction of max number of neurons
+      printv('Using fractional inDegree (value supplied: '+str(inDegree)+')')
       inDegree = get_frac(inDegree, nameSrc, nameTgt, verbose=False)
   
   printv("* connecting "+nameSrc+" -> "+nameTgt+" with "+projType+type+" connection and "+str(inDegree)+" inputs")
@@ -257,6 +264,10 @@ def connectMC(type,nameSrc,nameTgt,projType,inDegree,LCGDelays=True,gain=1., ver
   if projType == 'diffuse' and inDegree  > nbSim[nameSrc]*len(Pop[nameSrc]):
     printv("/!\ WARNING: required 'in degree' ("+str(inDegree)+") larger than number of neurons in the source population ("+str(nbSim[nameSrc]*len(Pop[nameSrc]))+"), thus reduced to the latter value")
     inDegree = nbSim[nameSrc]*len(Pop[nameSrc])
+
+  if inDegree == 0.:
+    printv("/!\ WARNING: non-existent connection strength, will skip")
+    return
 
   # prepare receptor type lists:
   if type == 'ex':
@@ -384,7 +395,7 @@ simDuration = 10000. # in ms
 # extracted from LG14 Table 5
 
 FRRNormal = {'MSN': [0.1,1],
-             'FSI': [5,20],
+             'FSI': [7.8,14.0], # the refined constraint of 10.9 +/- 3.1 Hz was extracted from the following papers: Adler et al., 2016; Yamada et al., 2016 (summarizing date from three different experiments); and Marche and Apicella, 2017
              'STN': [15.2,22.8],
              'GPe': [55.7,74.5],
              'GPi': [59.1,79.5],
@@ -631,3 +642,119 @@ rate = {'CSN':   2.  ,
         'GPi':  64.2
         } 
 
+#---------------------------
+def main():
+
+  # Pop is the dictionary that will contain the Nest IDs of all populations in the model
+  #-------------------------
+  print 'Creating neurons'
+
+  # creation of STN neurons
+  #-------------------------
+  nbSim['STN']=10.
+  print '* STN:',nbSim['STN'],'neurons with parameters:',BGparams['STN']
+
+  Pop['STN'] = nest.Create("iaf_psc_alpha_multisynapse",int(nbSim['STN']),params=BGparams['STN'])
+
+  #-------------------------
+  # creation of external inputs (ctx, CMPf)
+  #-------------------------
+  rate = {} # the dictionary used to store the desired discharge rates of the various Poisson generators that will be used as external inputs
+
+  # CSN
+  #-------------------------
+  #Pop['CSN']  = nest.Create('poisson_generator')
+  #nest.SetStatus(Pop['CSN'],{'rate': 2.0})
+
+
+  # PTN
+  #-------------------------
+  nbSim['PTN'] = 5*nbSim['STN']
+  rate['PTN'] =  15.
+  print '* PTN:',nbSim['PTN'],'Poisson generators with avg rate:',rate['PTN']
+  Pop['PTN']  = nest.Create('poisson_generator',int(nbSim['PTN']))
+  nest.SetStatus(Pop['PTN'],{'rate':rate['PTN']})
+
+  connect('ex','PTN','STN', inDegree=5)
+
+  # CMPf
+  #-------------------------
+  nbSim['CMPf']=nbSim['STN']
+  rate['CMPf']=  4.
+  print '* CMPf:',nbSim['CMPf'],'Poisson generators with avg rate:',rate['CMPf']
+  Pop['CMPf'] = nest.Create('poisson_generator',int(nbSim['CMPf']))
+  nest.SetStatus(Pop['CMPf'],{'rate': rate['CMPf']})
+
+  connect('ex','CMPf','STN', inDegree=1)
+
+  # Fake GPe
+  #-------------------------
+  nbSim['GPe'] = int(neuronCounts['GPe']/neuronCounts['STN']) * nbSim['STN']
+  rate['GPe']= 62.6
+  print '* GPe:',nbSim['GPe'],'Poisson generators with avg rate:',rate['GPe']
+  Pop['GPe'] = nest.Create('poisson_generator',int(nbSim['GPe']))
+  nest.SetStatus(Pop['GPe'],{'rate':rate['GPe']})
+
+  connect('in','GPe','STN', inDegree= int(neuronCounts['GPe']/neuronCounts['STN'])) 
+
+  #-------------------------
+  # measures
+  #-------------------------
+
+  mSTN = nest.Create("multimeter")
+  nest.SetStatus(mSTN, {"withtime":True, "record_from":["V_m","currents"]})
+  nest.Connect(mSTN, Pop['STN'])
+  
+  spkDetect = nest.Create("spike_detector", params={"withgid": True, "withtime": True})
+  nest.Connect(Pop['STN'], spkDetect)
+
+  # Simulation
+  #-------------------------
+  nest.Simulate(simDuration)
+
+
+  # Experimental estimation of the firing rate:
+  print '\n Spike Detector n_events',nest.GetStatus(spkDetect, 'n_events')[0]
+  expeRate = nest.GetStatus(spkDetect, 'n_events')[0] / float(nbSim['STN']*simDuration)
+  print '\n Rate:',expeRate*1000,'Hz'
+
+
+  # Displays
+  #-------------------------
+
+  showSynCurr = False
+  showSTNVolt = False
+
+  #print nest.GetStatus(mSTN)
+  #print "============================="
+  #print nest.GetStatus(mSTN)[0]
+
+  dmSTN = nest.GetStatus(mSTN)[0]
+  VmSTN = dmSTN["events"]["V_m"]
+  ImSTN = dmSTN["events"]["currents"]
+  tSTN = dmSTN["events"]["times"]
+  
+  dSD = nest.GetStatus(spkDetect,keys="events")[0]
+  evs = dSD["senders"]
+  ts = dSD["times"]
+
+  if interactive:
+    pylab.figure('STN spikes')
+    pylab.plot(ts, evs, ".")
+
+    if showSTNVolt:
+      pylab.figure('STN Voltage')
+      pylab.plot(tSTN, VmSTN)
+
+    if (showSynCurr):
+      pylab.figure("STN input PSPs")
+      pylab.plot(tSTN, ImSTN)
+
+    pylab.show()
+
+#---------------------------
+if __name__ == '__main__':
+  main()
+  
+  
+  
