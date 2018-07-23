@@ -88,6 +88,8 @@ params = {
 'stochastic_delays':          None, # If specified, gives the relative sd of a clipped Gaussian distribution for the delays
 # For convenience, a few simulator variables are also set here
 'whichTest':          'testFullBG', # task to be run (default: test the plausibility through deactivation simulations)
+'offsetDuration':             1000, # non-recorded stabilization period, in ms
+'simDuration':                1000, # simulation duration, in ms
 'nestSeed':                     20, # nest seed (affects input poisson spike trains)
 'pythonSeed':                   10, # python seed (affects connection map)
 'nbcpu':                         1, # number of CPUs to be used by nest

@@ -406,6 +406,8 @@ def main():
     Optional.add_argument('--gdf', action="store_true", help='Set to store spike rasters (gdf files) of the simulation', default=False)
     Optional.add_argument('--email', type=str, help='To receive emails when Sango cluster simulations are done', default='')
     Optional.add_argument('--tag', type=str, help='optional tag for this experiment, to be added to the directory name (avoid special characters like "/" or "\\")', default='')
+    Optional.add_argument('--offsetDuration', type=int, help='non-recorded stabilization period (in ms, default 1000 ms)', default=1000)
+    Optional.add_argument('--simDuration', type=int, help='simulation duration (in ms, default 1000 ms)', default=1000)
     Optional.add_argument('--nestSeed', type=int, help='Nest seed (affects the Poisson spike train generator)', default=None)
     Optional.add_argument('--pythonSeed', type=int, help='Python seed (affects connection map)', default=None)
     Optional.add_argument('--mock', action="store_true", help='Does not start the simulation, only writes experiment-specific directories', default=False)

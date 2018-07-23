@@ -35,8 +35,21 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
 
   simulationOffset = nest.GetKernelStatus('time')
   print('Simulation Offset: '+str(simulationOffset))
-  offsetDuration = 1000.
-  simDuration = 5000. # ms
+
+  if 'offsetDuration' not in params.keys():
+    offsetDuration = 1000.
+  else:
+    offsetDuration = params['offsetDuration']
+
+  if 'simDuration' not in params.keys():
+    simDuration = 1000. # step duration period
+    #simDuration = 50000. # ms VERY LONG
+    #simDuration = 10000. # ms LONG
+    #simDuration = 3000. # ms NORMAL
+    #simDuration = 1000. * 100. # ms DISTANCE BASED
+  else:
+    simDuration = params['simDuration']
+
 
   # single or multi-channel?
   if params['nbCh'] == 1:
