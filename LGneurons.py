@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 interactive = False # avoid loading X dependent things
@@ -29,7 +29,7 @@ def loadLG14params(ID):
   for row in LG14SolutionsReader:
     LG14Solutions.append(row)
 
-  print '### Parameterization #'+str(ID)+' from (Lienard & Girard, 2014) is used. ###'
+  print('### Parameterization #'+str(ID)+' from (Lienard & Girard, 2014) is used. ###')
 
   for k,v in alpha.iteritems():
     try:
@@ -37,13 +37,13 @@ def loadLG14params(ID):
     except:
       print('Could not find LG14 parameters for connection `'+k+'`, trying to run anyway.')
 
-  for k,v in p.iteritems():
+  for k,v in alpha.items():
     try:
       p[k] = round(float(LG14Solutions[ID]['DIST_'+k.replace('->','_')]),2)
     except:
       print('Could not find LG14 parameters for connection `'+k+'`, trying to run anyway.')
 
-  for k,v in BGparams.iteritems():
+  for k,v in BGparams.items():
     try:
       BGparams[k]['V_th'] = round(float(LG14Solutions[ID]['THETA_'+k]),1)
     except:
@@ -51,7 +51,7 @@ def loadLG14params(ID):
 
 
 def loadThetaFromCustomparams(params):
-  for k,v in BGparams.iteritems():
+  for k,v in BGparams.items():
     try:
       newval = round(float(params['THETA_'+k]), 2)
       print("WARNING: overwriting LG14 value for theta in "+k+" from original value of "+str(BGparams[k]['V_th'])+" to new value: "+str(newval))
@@ -77,14 +77,14 @@ def initNeurons():
 #-------------------------------------------------------------------------------
 def create(name,fake=False,parrot=True):
   if nbSim[name] == 0:
-    print 'ERROR: create(): nbSim['+name+'] = 0'
+    print('ERROR: create(): nbSim['+name+'] = 0')
     exit()
   if fake:
     if rate[name] == 0:
-      print 'ERROR: create(): rate['+name+'] = 0 Hz'
-    print '* '+name+'(fake):',nbSim[name],'Poisson generators with avg rate:',rate[name]
+      print('ERROR: create(): rate['+name+'] = 0 Hz')
+    print('* '+name+'(fake): '+str(nbSim[name])+' Poisson generators with avg rate: '+str(rate[name]))
     if not parrot:
-      print "/!\ /!\ /!\ /!\ \nWARNING: parrot neurons not used, no correlations in inputs\n"
+      print("/!\ /!\ /!\ /!\ \nWARNING: parrot neurons not used, no correlations in inputs\n")
       Pop[name]  = nest.Create('poisson_generator',int(nbSim[name]))
       nest.SetStatus(Pop[name],{'rate':rate[name]})
     else:
@@ -94,7 +94,7 @@ def create(name,fake=False,parrot=True):
       nest.Connect(pre=Fake[name],post=Pop[name],conn_spec={'rule':'one_to_one'})
 
   else:
-    print '* '+name+':',nbSim[name],'neurons with parameters:',BGparams[name]
+    print('* '+name+': '+str(nbSim[name])+' neurons with parameters: '+str(BGparams[name]))
     Pop[name] = nest.Create("iaf_psc_alpha_multisynapse",int(nbSim[name]),params=BGparams[name])
 
 #-------------------------------------------------------------------------------
@@ -437,7 +437,7 @@ def get_frac(FractionalOutDegree, nameSrc, nameTgt, cntSrc, cntTgt, useMin=False
 def computeW(listRecType, nameSrc, nameTgt, inDegree, gain=1.,verbose=False):
   nu = get_input_range(nameSrc, nameTgt, neuronCounts[nameSrc], neuronCounts[nameTgt], verbose=verbose)[1]
   if verbose:
-    print '\tCompare with the effective chosen inDegree   :',str(inDegree)
+    print('\tCompare with the effective chosen inDegree   : '+str(inDegree))
 
   # attenuation due to the distance from the receptors to the soma of tgt:
   attenuation = cosh(LX[nameTgt]*(1-p[nameSrc+'->'+nameTgt])) / cosh(LX[nameTgt])
@@ -710,12 +710,12 @@ def main():
 
   # Pop is the dictionary that will contain the Nest IDs of all populations in the model
   #-------------------------
-  print 'Creating neurons'
+  print('Creating neurons')
 
   # creation of STN neurons
   #-------------------------
   nbSim['STN']=10.
-  print '* STN:',nbSim['STN'],'neurons with parameters:',BGparams['STN']
+  print('* STN: '+str(nbSim['STN'])+' neurons with parameters: '+str(BGparams['STN']))
 
   Pop['STN'] = nest.Create("iaf_psc_alpha_multisynapse",int(nbSim['STN']),params=BGparams['STN'])
 
@@ -734,7 +734,7 @@ def main():
   #-------------------------
   nbSim['PTN'] = 5*nbSim['STN']
   rate['PTN'] =  15.
-  print '* PTN:',nbSim['PTN'],'Poisson generators with avg rate:',rate['PTN']
+  print('* PTN: '+str(nbSim['PTN'])+' Poisson generators with avg rate: '+str(rate['PTN']))
   Pop['PTN']  = nest.Create('poisson_generator',int(nbSim['PTN']))
   nest.SetStatus(Pop['PTN'],{'rate':rate['PTN']})
 
@@ -744,7 +744,7 @@ def main():
   #-------------------------
   nbSim['CMPf']=nbSim['STN']
   rate['CMPf']=  4.
-  print '* CMPf:',nbSim['CMPf'],'Poisson generators with avg rate:',rate['CMPf']
+  print('* CMPf: '+str(nbSim['CMPf'])+' Poisson generators with avg rate: '+str(rate['CMPf']))
   Pop['CMPf'] = nest.Create('poisson_generator',int(nbSim['CMPf']))
   nest.SetStatus(Pop['CMPf'],{'rate': rate['CMPf']})
 
@@ -754,7 +754,7 @@ def main():
   #-------------------------
   nbSim['GPe'] = int(neuronCounts['GPe']/neuronCounts['STN']) * nbSim['STN']
   rate['GPe']= 62.6
-  print '* GPe:',nbSim['GPe'],'Poisson generators with avg rate:',rate['GPe']
+  print('* GPe: '+str(nbSim['GPe'])+' Poisson generators with avg rate: '+str(rate['GPe']))
   Pop['GPe'] = nest.Create('poisson_generator',int(nbSim['GPe']))
   nest.SetStatus(Pop['GPe'],{'rate':rate['GPe']})
 
@@ -777,9 +777,9 @@ def main():
 
 
   # Experimental estimation of the firing rate:
-  print '\n Spike Detector n_events',nest.GetStatus(spkDetect, 'n_events')[0]
+  print('\n Spike Detector n_events '+str(nest.GetStatus(spkDetect, 'n_events')[0]))
   expeRate = nest.GetStatus(spkDetect, 'n_events')[0] / float(nbSim['STN']*simDuration)
-  print '\n Rate:',expeRate*1000,'Hz'
+  print('\n Rate:'+str(expeRate*1000)+' Hz')
 
 
   # Displays

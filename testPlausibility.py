@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 ##
@@ -78,7 +78,7 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
   text=[]
   frstr = "#" + str(params['LG14modelID'])+ " , " + antagInjectionSite + ', '
   s = '----- RESULTS -----'
-  print s
+  print(s)
   text.append(s+'\n')
   if antagInjectionSite == 'none':
     validationStr = "\n#" + str(params['LG14modelID']) + " , "
@@ -102,7 +102,7 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
 
       frstr += '%f , ' %(expeRate[N])
       s = '* '+N+' - Rate: '+str(expeRate[N])+' Hz -> '+strTestPassed+' ('+str(FRRNormal[N][0])+' , '+str(FRRNormal[N][1])+')'
-      print s
+      print(s)
       text.append(s+'\n')
       restFR[N] = str(expeRate[N])
 
@@ -144,16 +144,16 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
             validationStr += N + "_" + antag + "=%.2f , " % difference
 
         s = '* '+N+' with '+antag+' antagonist(s): '+str(expeRate[N])+' Hz -> '+strTestPassed+' ('+str(FRRAnt[N][antag][0])+' , '+str(FRRAnt[N][antag][1])+')'
-        print s
+        print(s)
         text.append(s+'\n')
       else:
         s = '* '+N+' - Rate: '+str(expeRate[N])+' Hz'
-        print s
+        print(s)
         text.append(s+'\n')
       frstr += '%f , ' %(expeRate[N])
 
   s = '-------------------'
-  print s
+  print(s)
   text.append(s+'\n')
 
   frstr+='\n'
@@ -196,7 +196,7 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
 #-----------------------------------------------------------------------
 def main():
   if len(sys.argv) >= 2:
-    print "Command Line Parameters"
+    print("Command Line Parameters")
     paramKeys = ['LG14modelID',
                  'nbMSN',
                  'nbFSI',
@@ -237,14 +237,14 @@ def main():
                  'inDegCMPfGPi',
                  ]
     if len(sys.argv) == len(paramKeys)+1:
-      print "Using command line parameters"
-      print sys.argv
+      print("Using command line parameters")
+      print(str(sys.argv))
       i = 0
       for k in paramKeys:
         i+=1
         params[k] = float(sys.argv[i])
     else :
-      print "Incorrect number of parameters:",len(sys.argv),"-",len(paramKeys),"expected"
+      print("Incorrect number of parameters")
 
   nest.set_verbosity("M_WARNING")
   
@@ -279,15 +279,15 @@ def main():
         score += checkAvgFR(params=params,antagInjectionSite='GPi',antag=a)
 
   #-------------------------
-  print "******************"
-  print "* Score:",score[0],'/',score[1]
-  print "******************"
+  print("******************")
+  print("* Score:"+str(score[0])+'/'+str(score[1]))
+  print("******************")
 
   #-------------------------
   # log the results in a file
   #-------------------------
   res = open('log/OutSummary.txt','a')
-  for k,v in params.iteritems():
+  for k,v in params.items():
     res.writelines(k+' , '+str(v)+'\n')
   res.writelines("Score: "+str(score[0])+' , '+str(score[1]))
   res.close()
@@ -299,7 +299,7 @@ def main():
   # combined params+score output, makes it quicker to read the outcome of many experiments
   params['sim_score'] = score[0]
   params['max_score'] = score[1]
-  with open('params_score.csv', 'wb') as csv_file:
+  with open('params_score.csv', 'w') as csv_file:
     writer = csv.writer(csv_file)
     for key, value in params.items():
        writer.writerow([key, value])

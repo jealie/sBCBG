@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import nstrand
@@ -20,7 +20,7 @@ def createBG():
   #==========================
   # Creation of neurons
   #-------------------------
-  print '\nCreating neurons\n================'
+  print('\nCreating neurons\n================')
 
   # single or multi-channel?
   if params['nbCh'] == 1:
@@ -73,7 +73,7 @@ def createBG():
   nbSim['CMPf'] = params['nbCMPf']
   create_pop('CMPf', fake=True, parrot=params['parrotCMPf']) # was: False
 
-  print "Number of simulated neurons:", nbSim
+  print("Number of simulated neurons:"+str(nbSim))
 
 #------------------------------------------
 # Connects the populations of a previously created multi-channel BG circuit
@@ -86,7 +86,7 @@ def connectBG(antagInjectionSite,antag):
        'GPi': params['GGPi'],
       }
 
-  print "Gains on LG14 syn. strength:", G
+  print("Gains on LG14 syn. strength:"+str(G))
 
   # single or multi-channel?
   if params['nbCh'] == 1:
@@ -101,9 +101,9 @@ def connectBG(antagInjectionSite,antag):
   #-------------------------
   # connection of populations
   #-------------------------
-  print '\nConnecting neurons\n================'
-  print "**",antag,"antagonist injection in",antagInjectionSite,"**"
-  print '* MSN Inputs'
+  print('\nConnecting neurons\n================')
+  print("** "+antag+" antagonist injection in "+antagInjectionSite+" **")
+  print('* MSN Inputs')
   if 'nbCues' not in params.keys():
     # usual case: CSN have as the same number of channels than the BG nuclei
     CSN_MSN = connect_pop('ex','CSN','MSN', projType=params['cTypeCSNMSN'], redundancy=params['redundancyCSNMSN'], gain=G['MSN'])
@@ -117,13 +117,13 @@ def connectBG(antagInjectionSite,antag):
   connect_pop('in','FSI','MSN', projType=params['cTypeFSIMSN'], redundancy= params['redundancyFSIMSN'], gain=G['MSN'])
   # some parameterizations from LG14 have no STN->MSN or GPe->MSN synaptic contacts
   if alpha['STN->MSN'] != 0:
-    print "alpha['STN->MSN']",alpha['STN->MSN']
+    print("Note: alpha['STN->MSN'] = "+str(alpha['STN->MSN']))
     connect_pop('ex','STN','MSN', projType=params['cTypeSTNMSN'], redundancy= params['redundancySTNMSN'], gain=G['MSN'])
   if alpha['GPe->MSN'] != 0:
-    print "alpha['GPe->MSN']",alpha['GPe->MSN']
+    print("Note: alpha['GPe->MSN'] = "+str(alpha['GPe->MSN']))
     connect_pop('in','GPe','MSN', projType=params['cTypeGPeMSN'], redundancy= params['redundancyGPeMSN'], gain=G['MSN'])
 
-  print '* FSI Inputs'
+  print('* FSI Inputs')
   connect_pop('ex','CSN','FSI', projType=params['cTypeCSNFSI'], redundancy= params['redundancyCSNFSI'], gain=G['FSI'])
   connect_pop('ex','PTN','FSI', projType=params['cTypePTNFSI'], redundancy= params['redundancyPTNFSI'], gain=G['FSI'])
   if alpha['STN->FSI'] != 0:
@@ -132,12 +132,12 @@ def connectBG(antagInjectionSite,antag):
   connect_pop('ex','CMPf','FSI',projType=params['cTypeCMPfFSI'],redundancy= params['redundancyCMPfFSI'],gain=G['FSI'])
   connect_pop('in','FSI','FSI', projType=params['cTypeFSIFSI'], redundancy= params['redundancyFSIFSI'], gain=G['FSI'])
 
-  print '* STN Inputs'
+  print('* STN Inputs')
   connect_pop('ex','PTN','STN', projType=params['cTypePTNSTN'], redundancy= params['redundancyPTNSTN'],  gain=G['STN'])
   connect_pop('ex','CMPf','STN',projType=params['cTypeCMPfSTN'],redundancy= params['redundancyCMPfSTN'], gain=G['STN'])
   connect_pop('in','GPe','STN', projType=params['cTypeGPeSTN'], redundancy= params['redundancyGPeSTN'],  gain=G['STN'])
 
-  print '* GPe Inputs'
+  print('* GPe Inputs')
   if 'fakeGPeRecurrent' not in params.keys():
     # usual case: GPe's recurrent collaterals are handled normally
     GPe_recurrent_source = 'GPe'
@@ -171,14 +171,14 @@ def connectBG(antagInjectionSite,antag):
       connect_pop('ex','CMPf','GPe',projType=params['cTypeCMPfGPe'],redundancy= params['redundancyCMPfGPe'],gain=G['GPe'])
       connect_pop('ex','STN','GPe', projType=params['cTypeSTNGPe'], redundancy= params['redundancySTNGPe'], gain=G['GPe'])
     else:
-      print antagInjectionSite,": unknown antagonist experiment:",antag
+      print(antagInjectionSite+": unknown antagonist experiment: "+antag)
   else:
     connect_pop('ex','CMPf','GPe',projType=params['cTypeCMPfGPe'],redundancy= params['redundancyCMPfGPe'],gain=G['GPe'])
     connect_pop('ex','STN','GPe', projType=params['cTypeSTNGPe'], redundancy= params['redundancySTNGPe'], gain=G['GPe'])
     connect_pop('in','MSN','GPe', projType=params['cTypeMSNGPe'], redundancy= params['redundancyMSNGPe'], gain=G['GPe'])
     connect_pop('in', GPe_recurrent_source, 'GPe', projType=params['cTypeGPeGPe'], redundancy= params['redundancyGPeGPe'], gain=G['GPe'])
 
-  print '* GPi Inputs'
+  print('* GPi Inputs')
   if antagInjectionSite =='GPi':
     if   antag == 'AMPA+NMDA+GABAA':
       pass
@@ -199,7 +199,7 @@ def connectBG(antagInjectionSite,antag):
       connect_pop('ex','STN','GPi', projType=params['cTypeSTNGPi'], redundancy= params['redundancySTNGPi'], gain=G['GPi'])
       connect_pop('ex','CMPf','GPi',projType=params['cTypeCMPfGPi'],redundancy= params['redundancyCMPfGPi'],gain=G['GPi'])
     else:
-      print antagInjectionSite,": unknown antagonist experiment:",antag
+      print(antagInjectionSite+": unknown antagonist experiment: "+antag)
   else:
     connect_pop('in','MSN','GPi', projType=params['cTypeMSNGPi'], redundancy= params['redundancyMSNGPi'], gain=G['GPi'])
     connect_pop('ex','STN','GPi', projType=params['cTypeSTNGPi'], redundancy= params['redundancySTNGPi'], gain=G['GPi'])
@@ -290,7 +290,7 @@ def instantiate_BG(params={}, antagInjectionSite='none', antag=''):
   #nest.SetKernelStatus({"resolution": 0.005}) # simulates with a higher precision
   initNeurons()
 
-  print '/!\ Using the following LG14 parameterization',params['LG14modelID']
+  print('/!\ Using the following LG14 parameterization'+str(params['LG14modelID']))
   loadLG14params(params['LG14modelID'])
   loadThetaFromCustomparams(params)
 
