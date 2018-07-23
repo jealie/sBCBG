@@ -46,6 +46,9 @@ class JobDispatcher:
     self.interactive = cmd_args.interactive
     self.storeGDF = cmd_args.gdf
     self.mock = cmd_args.mock
+    self.folder = cmd_args.folder
+    if self.folder != '' and self.folder[-1] != '/':
+        self.folder += '/' # add a trailing slash
     self.tag = cmd_args.tag
     self.sim_counter = self.last_sim = 0
     self.get_git_info()
@@ -127,8 +130,10 @@ class JobDispatcher:
     else:
       # SangoArray uses a different naming scheme with numbered subdirectories
       IDstring = 'array_'+self.timeString
+    if self.folder != '':
+      IDstring = self.folder + IDstring # initialize the XP in another directory (optional)
     if self.tag != '':
-      IDstring += '_'+self.tag
+      IDstring += '_'+self.tag # add the XP tag if present
     # The first 3 steps initialize the directory and populate it with the configurations files
     # Due to limitations of Sango filesystem, when platform == 'SangoArray', we postpone the creation of directories until the job is actually run
     if self.platform != 'SangoArray':
@@ -411,6 +416,7 @@ def main():
     Optional.add_argument('--nestSeed', type=int, help='Nest seed (affects the Poisson spike train generator)', default=None)
     Optional.add_argument('--pythonSeed', type=int, help='Python seed (affects connection map)', default=None)
     Optional.add_argument('--mock', action="store_true", help='Does not start the simulation, only writes experiment-specific directories', default=False)
+    Optional.add_argument('--folder', type=str, help='Initialize and run the simulation in this directory (current directory if not specified)', default='')
     
     cmd_args = parser.parse_args()
     
