@@ -79,6 +79,11 @@ params = {
 'cTypeMSNGPi':           'focused', # ^
 'cTypeSTNGPi':           'diffuse', # ^
 'cTypeGPeGPi':           'diffuse', # LG14: no data available to decide; setting to diffuse improve selection properties
+'topo':                      False, # Enable the topological version of the BG? not by default
+'spread_focused':              0.1, # connection spread of focused projections (used if topo==True)
+'spread_diffuse':               4., # connection spread of diffuse projections (used if topo==True)
+'channel_center':              0.3, # distance of channels to the center (used if topo==True)
+'channel_radius':             0.25, # radius of channels (used if topo==True)
 'parrotCMPf' :                True, # Should the CMPf be simulated using parrot neurons?
 'stochastic_delays':          None, # If specified, gives the relative sd of a clipped Gaussian distribution for the delays
 # For convenience, a few simulator variables are also set here

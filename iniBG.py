@@ -22,20 +22,29 @@ def createBG():
   #-------------------------
   print('\nCreating neurons\n================')
 
-  # single or multi-channel?
   if params['nbCh'] == 1:
+    # single-channel nuclei
     def create_pop(*args, **kwargs):
       if 'nbCh' in kwargs.keys():
         # remove the extra arg
         kwargs.pop("nbCh", None)
       create(*args, **kwargs)
     update_Ie = lambda p: nest.SetStatus(Pop[p],{"I_e":params['Ie'+p]})
-  else:
+  elif 'topo' not in params.keys() or params['topo'] == False:
+    # multi-channel nuclei
     def create_pop(*args, **kwargs):
       if 'nbCh' not in kwargs.keys():
         # enforce the default
         kwargs['nbCh'] = params['nbCh']
       createMC(*args, **kwargs)
+    update_Ie = lambda p: [nest.SetStatus(Pop[p][i],{"I_e":params['Ie'+p]}) for i in range(len(Pop[p]))]
+  else:
+    # topological nuclei
+    def create_pop(*args, **kwargs):
+      if 'nbCh' not in kwargs.keys():
+        # enforce the default
+        kwargs['nbCh'] = params['nbCh']
+      createTopoMC(*args, layout=params['topo'], c=params['channel_center'], r=params['channel_radius'], **kwargs)
     update_Ie = lambda p: [nest.SetStatus(Pop[p][i],{"I_e":params['Ie'+p]}) for i in range(len(Pop[p]))]
 
   nbSim['MSN'] = params['nbMSN']
@@ -88,15 +97,24 @@ def connectBG(antagInjectionSite,antag):
 
   print("Gains on LG14 syn. strength:"+str(G))
 
-  # single or multi-channel?
   if params['nbCh'] == 1:
+    # single-channel nuclei
     connect_pop = lambda *args, **kwargs: connect(*args, RedundancyType=params['RedundancyType'], stochastic_delays=params['stochastic_delays'], **kwargs)
-  else:
+  elif 'topo' not in params.keys() or params['topo'] == False:
+    # multi-channel nuclei
     def connect_pop(*args, **kwargs):
       if 'source_channels' not in kwargs.keys():
         # enforce the default
         kwargs['source_channels'] = range(params['nbCh'])
       return connectMC(*args, RedundancyType=params['RedundancyType'], stochastic_delays=params['stochastic_delays'], **kwargs)
+  else:
+    # topological nuclei
+    def connect_pop(*args, **kwargs):
+      if 'source_channels' not in kwargs.keys():
+        # enforce the default
+        kwargs['source_channels'] = range(params['nbCh'])
+      topo_spreads = [params['spread_focused'], params['spread_diffuse']]
+      return connectTopoMC(*args, RedundancyType=params['RedundancyType'], stochastic_delays=params['stochastic_delays'], spreads=topo_spreads, **kwargs)
 
   #-------------------------
   # connection of populations
