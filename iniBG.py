@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import nstrand
@@ -232,6 +232,11 @@ def connectBG(antagInjectionSite,antag):
 #------------------------------------------
 # Re-weight a specific connection, characterized by a source, a target, and a receptor
 # Returns the previous value of that connection (useful for 'reactivating' after a deactivation experiment)
+#    _
+#   / \
+#  / | \    Careful: this routine seems to hang forever with nest-5g (development version built on July 20, 2018)
+# /  o  \
+# -------
 #------------------------------------------
 def alter_connection(src, tgt, tgt_receptor, altered_weight):
   if params['nbCh'] != 1:

@@ -1,4 +1,4 @@
-#!/apps/free/python/2.7.10/bin/python
+#!/usr/bin/env python
 import sys
 import nest.raster_plot
 

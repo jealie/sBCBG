@@ -1,5 +1,6 @@
-#!/apps/free/python/2.7.10/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-    
+
 from LGneurons import *
 from modelParams import *
 import nest.raster_plot
