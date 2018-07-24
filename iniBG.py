@@ -230,6 +230,54 @@ def connectBG(antagInjectionSite,antag):
 
 
 #------------------------------------------
+# Creates a "fake" copy of a nucleus with the same number of neurons and which fires with Poisson spike trains of a specified frequency
+# /original_nuc/ is the name of the original nucleus to copy, /new_nuc/ is the desired name of the Poisson nucleus to create
+# /poisson_rate/ specifies the desired firing frequency
+#------------------------------------------
+def Poisson_copy(original_nuc, new_nuc, poisson_rate):
+  rate[new_nuc] = poisson_rate
+  for nucleus_dict in [nbSim, neuronCounts]:
+    nucleus_dict[new_nuc] = nucleus_dict[original_nuc]
+  if params['nbCh'] == 1:
+    create(new_nuc, fake=True, parrot=True)
+  else:
+    createMC(new_nuc, params['nbCh'], fake=True, parrot=True)
+
+
+#------------------------------------------
+# Replaces the specified connection in the normal BG circuitry by a "bypass" from another nucleus
+# The arguments specify respectively the previous source nucleus (/original_nuc_from/ to be disconnected), the new source nucleus (/new_nuc_from/ to be connected instead), with respect to the target nucleus /nuc_to/
+# Note: this is really useful in conjonction with a fake nucleus created through a call to copy_nucleus_Poisson
+#------------------------------------------
+def bypass_connection(original_nuc_from, new_nuc_from, nuc_to):
+  # retrieve the existing connections
+  existing_conns = nest.GetConnections(source=np.array(Pop[original_nuc_from]).flatten().tolist(), target=np.array(Pop[nuc_to]).flatten().tolist())
+  if len(existing_conns) == 0:
+    print('skipping non-existent connection '+original_nuc_from+'->'+nuc_to)
+  else:
+    print("Replacing connection "+original_nuc_from+"->"+nuc_to+" by "+new_nuc_from+"->"+nuc_to+"...")
+    # retrieving the receptor, weight and delay parameters of the current connection
+    weights_delays_recs = np.array(nest.GetStatus(existing_conns, keys=['weight', 'delay', 'receptor'])).transpose()
+    old_src, tgt, _, _, _ = zip(*existing_conns)
+    # get input neurons from the fake nucleus that match the current source nucleus neurons
+    new_src = np.array(sorted(old_src, key=lambda x: x)) - min(old_src) + Pop[new_nuc_from][0][0] # remark: this relies on sequential ordering of pynest created neurons
+    # destroy the current connection by setting its weight to 0
+    nest.SetStatus(existing_conns, [{'weight': 0.} for i in range(len(existing_conns))])
+    # connect the fake nucleus instead, looping over the required receptors
+    for r in np.unique(weights_delays_recs[2]):
+      # get all connection indices using this receptor
+      same_r = np.where(weights_delays_recs[2] == r)[0]
+      # creates the new connection for these indices
+      nest.Connect(pre=new_src[same_r].tolist(),
+                   post=np.array(tgt)[same_r].tolist(),
+                   conn_spec='one_to_one',
+                   syn_spec={'model': 'static_synapse',
+                             #'model': 'static_synapse_lbl', 'synapse_label': 0,
+                             'receptor_type': int(r),
+                             'weight': weights_delays_recs[0][same_r].tolist(),
+                             'delay': weights_delays_recs[1][same_r].tolist()})
+
+#------------------------------------------
 # Re-weight a specific connection, characterized by a source, a target, and a receptor
 # Returns the previous value of that connection (useful for 'reactivating' after a deactivation experiment)
 #    _
