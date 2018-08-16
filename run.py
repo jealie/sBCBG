@@ -46,9 +46,12 @@ class JobDispatcher:
     self.interactive = cmd_args.interactive
     self.storeGDF = cmd_args.gdf
     self.mock = cmd_args.mock
-    self.folder = cmd_args.folder
-    if self.folder != '' and self.folder[-1] != '/':
-        self.folder += '/' # add a trailing slash
+    self.data_folder = cmd_args.folder
+    if self.data_folder != '' and self.data_folder[-1] != '/':
+        self.data_folder += '/' # add a trailing slash
+    self.code_folder = os.path.dirname(os.path.realpath(__file__))
+    if self.code_folder != '' and self.code_folder[-1] != '/':
+        self.code_folder += '/' # add a trailing slash
     self.tag = cmd_args.tag
     self.sim_counter = self.last_sim = 0
     self.get_git_info()
@@ -97,7 +100,8 @@ class JobDispatcher:
     # Initialize the experiment-specific directory named with IDstring and populate it with the required files
     print('Create subdirectory: '+IDstring)
     os.system('mkdir -p '+IDstring+'/log')
-    os.system('cp ' + ' '.join(self.files_to_transfer) + ' ' + IDstring + '/')
+    for f in self.files_to_transfer:
+      os.system('cp ' + self.code_folder+f + ' ' + IDstring + '/')
 
   def write_modelParams(self, IDstring, params, path='./modelParams.py'):
     # Write the experiment-specific parameterization file into modelParams.py
@@ -130,8 +134,8 @@ class JobDispatcher:
     else:
       # SangoArray uses a different naming scheme with numbered subdirectories
       IDstring = 'array_'+self.timeString
-    if self.folder != '':
-      IDstring = self.folder + IDstring # initialize the XP in another directory (optional)
+    if self.data_folder != '':
+      IDstring = self.data_folder + IDstring # initialize the XP in another directory (optional)
     if self.tag != '':
       IDstring += '_'+self.tag # add the XP tag if present
     # The first 3 steps initialize the directory and populate it with the configurations files
