@@ -1,0 +1,47 @@
+# Maximal hypersphere of parameters giving a plausibility score of 14/14
+
+the_scale = 4.
+
+params = {
+  # original LG14 parameterization
+  'LG14modelID':9 ,
+  # hypersphere parameterization
+  'IeMSN': 24.5 ,
+  'IeFSI': 8. ,
+  'IeSTN': 9.5 ,
+  'IeGPe': 12. ,
+  'IeGPi': 11. ,
+  # original number of neurons, possibly scaled
+  'nbMSN':  the_scale * 2644. ,
+  'nbFSI':  the_scale * 53. ,
+  'nbSTN':  the_scale * 8. ,
+  'nbGPe':  the_scale * 25. ,
+  'nbGPi':  the_scale * 14. ,
+  'nbCSN':  the_scale * 3000. ,
+  'nbPTN':  the_scale * 3000. ,
+  'nbCMPf': the_scale * 3000. ,
+  # duration of a simulation (in ms)
+  'simDuration': 1000.,
+  # parameters for the input screen
+  #'CSNFRmod': 1.,
+  #'PTNFRmod': 1.,
+  #'CMPfFRmod': 0.,
+  #'CSNFRmod':  [i/5. for i in range(6)],
+  #'PTNFRmod':  [i/5. for i in range(6)],
+  #'CMPfFRmod': [0., .5, 1.],
+  #'selecRamp': 1,
+  'CSNFRmod':  [i/10. for i in range(11)],
+  'PTNFRmod':  [i/10. for i in range(11)],
+  'CMPfFRmod': [0., 0.33, .5, 0.67, 1.],
+  'selecRamp': 1,
+  #'cTypeCMPfMSN':   'focused',
+  #'cTypeCMPfFSI':   'focused',
+  #'cTypeCMPfSTN':   'focused',
+  #'cTypeCMPfGPe':   'focused',
+  #'cTypeCMPfGPi':   'focused',
+  'cTypeCMPfMSN':   'diffuse',
+  'cTypeCMPfFSI':   'diffuse',
+  'cTypeCMPfSTN':   'diffuse',
+  'cTypeCMPfGPe':   'diffuse',
+  'cTypeCMPfGPi':   'diffuse',
+}
