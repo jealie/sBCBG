@@ -54,11 +54,12 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
   # single or multi-channel?
   if params['nbCh'] == 1:
     connect_detector = lambda N: nest.Connect(Pop[N], spkDetect[N])
-    disconnect_detector = lambda N: nest.Disconnect(Pop[N], spkDetect[N])
+    #disconnect_detector = lambda N, _: [nest.DisconnectOneToOne(Pop[N][i], spkDetect[N][0], syn_spec={}) for i in range(len(Pop[N]))]
+    #disconnect_detector = lambda N, detector: ipdb.set_trace()
     connect_multimeter = lambda N: nest.Connect(multimeters[N], [Pop[N][0]])
   else:
     connect_detector= lambda N: [nest.Connect(Pop[N][i], spkDetect[N]) for i in range(len(Pop[N]))]
-    disconnect_detector= lambda N: [nest.Disconnect(Pop[N][i], spkDetect[N]) for i in range(len(Pop[N]))]
+    #disconnect_detector= lambda N: [nest.Disconnect(Pop[N][i], spkDetect[N]) for i in range(len(Pop[N]))]
     connect_multimeter = lambda N: nest.Connect(multimeters[N], [Pop[N][0][0]])
 
   #-------------------------
@@ -198,10 +199,13 @@ def checkAvgFR(showRasters=False,params={},antagInjectionSite='none',antag='',lo
       for N in NUCLEI:
         pl.subplot(nsub)
         nest.voltage_trace.from_device(multimeters[N],title=N+displayStr+' #0')
-        disconnect_detector(N)
+        #disconnect_detector(N, spkDetect[N])
         pl.axhline(y=BGparams[N]['V_th'], color='r', linestyle='-')
         nsub += 1
     pl.show()
+
+  #for N in NUCLEI:
+  #  disconnect_detector(N, spkDetect[N])
 
   return score, 5 if antagInjectionSite == 'none' else 1
 
