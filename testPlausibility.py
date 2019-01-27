@@ -274,18 +274,18 @@ def main():
   if score[0] < score[1]:
     print("Activities at rest do not match: skipping deactivation tests")
   else:
-    if params['nbCh'] == 1:
-      # The following implements the deactivation tests without re-wiring the BG (faster but implemented only in single-channel case)
-      for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:
-        ww = deactivate('GPe', a)
-        score += checkAvgFR(params=params,antagInjectionSite='GPe',antag=a)
-        reactivate('GPe', a, ww)
+      #if params['nbCh'] == 1:
+      #  # The following implements the deactivation tests without re-wiring the BG (faster but implemented only in single-channel case)
+      #  for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:
+      #    ww = deactivate('GPe', a)
+      #    score += checkAvgFR(params=params,antagInjectionSite='GPe',antag=a)
+      #    reactivate('GPe', a, ww)
 
-      for a in ['AMPA+NMDA+GABAA','AMPA','NMDA+AMPA','NMDA','GABAA']:
-        ww = deactivate('GPi', a)
-        score += checkAvgFR(params=params,antagInjectionSite='GPi',antag=a)
-        reactivate('GPi', a, ww)
-    else:
+      #  for a in ['AMPA+NMDA+GABAA','AMPA','NMDA+AMPA','NMDA','GABAA']:
+      #    ww = deactivate('GPi', a)
+      #    score += checkAvgFR(params=params,antagInjectionSite='GPi',antag=a)
+      #    reactivate('GPi', a, ww)
+      #else:
       # The following implements the deactivation tests with re-creation of the entire BG every time (slower but also implemented for multi-channels)
       for a in ['AMPA','AMPA+GABAA','NMDA','GABAA']:
         instantiate_BG(params, antagInjectionSite='GPe', antag=a)
